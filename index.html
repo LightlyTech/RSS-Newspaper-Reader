@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<!-- saved from url=(0125)file:///C:/Users/l_z_x/Doubao/chats/2026-11-07/new-chat-2/rss-newspaper/RSS%E6%8A%A5%E7%BA%B8%E9%98%85%E8%AF%BB%E5%99%A8.html -->
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RSS 报纸阅读器</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23EFE6D3'/%3E%3Crect x='10' y='13' width='44' height='38' fill='none' stroke='%2314120E' stroke-width='3'/%3E%3Crect x='16' y='19' width='13' height='13' fill='%2398291F'/%3E%3Cline x1='33' y1='21' x2='48' y2='21' stroke='%2314120E' stroke-width='2.6'/%3E%3Cline x1='33' y1='27' x2='48' y2='27' stroke='%2314120E' stroke-width='2.6'/%3E%3Cline x1='16' y1='38' x2='48' y2='38' stroke='%2314120E' stroke-width='2.6'/%3E%3Cline x1='16' y1='44' x2='40' y2='44' stroke='%2314120E' stroke-width='2.6'/%3E%3C/svg%3E">
+<style>
+/* ===================================================================
+   1. 版式基色：新闻纸、油墨、细线、朱红
+   =================================================================== */
+:root{
+  --paper:#F3EADA;
+  --paper-2:#E6DBC3;
+  --sheet:#FAF4E6;
+  --ink:#1A1712;
+  --ink-2:#413B31;
+  --ink-3:#756B5A;
+  --rule:#C9BDA2;
+  --rule-soft:#E2D7BF;
+  --accent:#98291F;
+  --serif:"Songti SC","SimSun","STSong","Source Han Serif SC","Noto Serif SC",Georgia,"Times New Roman",serif;
+  --hei:"PingFang SC","Microsoft YaHei","Heiti SC","SimHei","Noto Sans SC",sans-serif;
+  --kai:"Kaiti SC","KaiTi","STKaiti","Songti SC","SimSun",serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--serif);font-size:17px;line-height:1.9;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  min-height:100dvh;
+}
+body.view-detail{overflow:hidden;height:100dvh}
+
+/* ===================================================================
+   8.5 底色主题（首页「底色」按钮循环切换）
+   =================================================================== */
+body.theme-sepia{--paper:#F3EADA;--paper-2:#E6DBC3;--sheet:#FAF4E6;--rule:#C9BDA2;--rule-soft:#E2D7BF;
+  --ink:#1A1712;--ink-2:#413B31;--ink-3:#756B5A}
+body.theme-white{--paper:#FFFFFF;--paper-2:#F0F0F0;--sheet:#FFFFFF;--rule:#C4C4C4;--rule-soft:#E4E4E4;
+  --ink:#111111;--ink-2:#3D3D3D;--ink-3:#6E6E6E}
+body.theme-grey{--paper:#F2F2F2;--paper-2:#E5E5E5;--sheet:#FAFAFA;--rule:#C8C8C8;--rule-soft:#E4E4E4;
+  --ink:#151515;--ink-2:#3E3E3E;--ink-3:#6E6E6E}
+body.theme-dark{--paper:#141414;--paper-2:#202020;--sheet:#1B1B1B;--rule:#3B3B3B;--rule-soft:#2A2A2A;
+  --ink:#EDE7D9;--ink-2:#C8C2B3;--ink-3:#938C7E;--accent:#C8513C}
+.theme-dark .paper-grain{mix-blend-mode:screen;opacity:.10}
+.theme-dark .art-body img,.theme-dark .lead-photo img{background:var(--paper-2)}
+
+/* 纸纹：只做极淡的油墨颗粒，白底上不显脏 */
+.paper-grain{
+  position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.3;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.86' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='180' height='180' filter='url(%23n)' opacity='0.42'/></svg>");
+  background-size:180px 180px;
+}
+#view{position:relative;z-index:1}
+.wrap{width:100%;padding:0 clamp(16px,3.2vw,64px)}
+
+/* ===================================================================
+   2. 通用元件
+   =================================================================== */
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+a{color:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.gem{display:inline-block;font-family:var(--hei);font-size:10px;line-height:1.6;letter-spacing:.08em;
+  border:1px solid currentColor;padding:0 5px;vertical-align:1px}
+.mini{font-family:var(--hei);font-size:13px;letter-spacing:.06em;color:var(--ink-2);
+  border:1px solid var(--rule);padding:0 12px;min-height:44px;min-width:44px;transition:border-color .2s,color .2s,background .2s}
+.mini:hover{border-color:var(--ink);color:var(--ink)}
+.mini[aria-pressed="true"]{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.rule-double{height:6px;border-top:1.5px solid var(--ink);border-bottom:1px solid var(--ink);margin:6px 0 0}
+
+/* ===================================================================
+   3. 订阅弹窗
+   =================================================================== */
+.modal{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal[hidden]{display:none}
+.modal-veil{position:absolute;inset:0;background:rgba(20,18,14,.55);backdrop-filter:blur(2px)}
+.modal-card{
+  position:relative;width:100%;max-width:520px;max-height:calc(100dvh - 32px);overflow-y:auto;
+  background:var(--sheet);overscroll-behavior:contain;
+  border:1px solid var(--ink);box-shadow:0 30px 80px -30px rgba(20,18,14,.7);
+  padding:26px 22px 22px;
+}
+.modal-rule{height:5px;border-top:2px solid var(--ink);border-bottom:1px solid var(--ink);margin-bottom:18px}
+.modal-kicker{font-family:var(--hei);font-size:11px;letter-spacing:.18em;color:var(--ink-3);margin:0 0 6px}
+.modal-title{font-family:var(--hei);font-size:clamp(26px,7vw,36px);line-height:1.2;letter-spacing:.04em;margin:0 0 12px}
+.modal-desc{margin:0 0 22px;font-size:15px;line-height:1.8;color:var(--ink-2)}
+.field-label{display:block;font-family:var(--hei);font-size:12px;letter-spacing:.14em;color:var(--ink-2);margin-bottom:6px}
+.field{display:flex;align-items:stretch;border:1px solid var(--ink);background:var(--sheet)}
+.field input{
+  flex:1;min-width:0;border:0;background:transparent;padding:12px 12px;font-family:var(--serif);
+  font-size:16px;color:var(--ink);line-height:1.5
+}
+.field input::placeholder{color:var(--ink-3)}
+.field input:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.btn-inline{
+  flex:none;font-family:var(--hei);font-size:14px;letter-spacing:.16em;padding:0 18px;min-width:88px;
+  background:var(--ink);color:var(--sheet);border-left:1px solid var(--ink);min-height:48px;
+  transition:background .2s,color .2s
+}
+.btn-inline:hover{background:var(--accent);color:#FFFFFF}
+.btn-inline:disabled{background:#6B6357;cursor:not-allowed}
+/* 启动弹窗：常用订阅源选板 */
+.feed-pick-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 8px}
+.pick-title{font-family:var(--hei);font-size:12px;letter-spacing:.14em;color:var(--ink-2)}
+.pick-hint{font-family:var(--kai);font-size:12px;color:var(--ink-3)}
+.feed-pick{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+  max-height:clamp(176px,30vh,286px);overflow-y:auto;overscroll-behavior:contain;
+  padding:8px;border:1px solid var(--rule-soft);background:var(--paper);scrollbar-width:thin;
+}
+.feed-group{grid-column:1/-1;font-family:var(--hei);font-size:10.5px;letter-spacing:.16em;
+  color:var(--ink-3);padding:6px 2px 2px;border-bottom:1px solid var(--rule-soft);margin-bottom:1px}
+.feed-opt{
+  display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0;
+  min-height:44px;padding:0 9px;text-align:left;
+  border:1px solid var(--rule);background:var(--sheet);
+  transition:border-color .15s,background .15s
+}
+.feed-opt .fo-name{font-family:var(--hei);font-size:13px;letter-spacing:.04em;color:var(--ink);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.feed-opt .fo-n{flex:none;font-family:var(--kai);font-size:11px;color:var(--ink-3)}
+.feed-opt:hover{border-color:var(--ink);background:var(--paper-2)}
+.feed-opt[aria-pressed="true"]{border-color:var(--ink);background:var(--paper-2);box-shadow:inset 0 0 0 1px var(--ink)}
+.feed-opt[aria-pressed="true"] .fo-name{color:var(--ink)}
+.feed-opt:disabled{opacity:.45;cursor:not-allowed}
+@media (max-width:430px){ .feed-pick{grid-template-columns:1fr} }
+.modal-status{margin:14px 0 0;font-size:14px;line-height:1.75;color:var(--ink-2);border-left:2px solid var(--rule);padding-left:10px}
+.modal-status.is-error{color:var(--accent);border-left-color:var(--accent)}
+.modal-note{margin:16px 0 0;font-family:var(--kai);font-size:14px;line-height:1.8;color:var(--ink-3)}
+
+/* ===================================================================
+   4. 报头与版次导航
+   =================================================================== */
+.masthead{padding-top:20px}
+.mast-eyebrow{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  font-family:var(--hei);font-size:11px;letter-spacing:.16em;color:var(--ink-2);
+  border-bottom:1px solid var(--rule);padding-bottom:8px}
+.mast-row{text-align:center;padding:16px 0 12px}
+.feed-title{
+  font-family:var(--hei);font-weight:700;margin:0;
+  font-size:clamp(34px,10.5vw,74px);line-height:1.02;letter-spacing:.06em;
+}
+.mast-dateline{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
+  gap:10px;font-family:var(--hei);font-size:12px;letter-spacing:.04em;color:var(--ink-2);
+  padding:8px 0 10px}
+.mast-dateline .rule-v{display:inline-block;width:1px;height:12px;background:var(--rule)}
+
+.nav-strip{
+  position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:8px;
+  margin-top:10px;padding:8px 0;background:var(--paper);
+  border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
+  overflow-x:auto;scrollbar-width:thin;
+}
+.nav-btn{
+  flex:none;display:inline-flex;align-items:center;gap:7px;
+  font-family:var(--hei);font-size:13px;color:var(--ink-2);letter-spacing:.04em;
+  border:1px solid transparent;padding:0 10px;min-height:44px;white-space:nowrap;
+  transition:color .2s,border-color .2s
+}
+.nav-btn .gem{color:var(--ink-3)}
+.nav-btn:hover{color:var(--ink);border-color:var(--rule)}
+.nav-btn.is-active{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.nav-btn.is-active .gem{color:var(--sheet)}
+.nav-count{font-size:11px;color:var(--ink-3)}
+.nav-btn.is-active .nav-count{color:rgba(247,242,230,.72)}
+.nav-tools{margin-left:auto;display:flex;gap:6px;padding-left:10px}
+
+/* ===================================================================
+   5. 头版
+   =================================================================== */
+.front{display:block;padding-top:18px}
+.lead{min-width:0}
+.lead-kicker{display:flex;align-items:center;gap:8px;font-family:var(--hei);font-size:12px;
+  letter-spacing:.12em;color:var(--accent)}
+.lead-kicker .gem{color:var(--accent)}
+.kicker-rule{flex:1;height:1px;background:var(--rule);margin:0 2px}
+.lead-kicker time{font-family:var(--hei);font-size:11px;letter-spacing:.06em;color:var(--ink-3)}
+.lead-title{margin:10px 0 8px}
+.headline-btn{
+  display:block;width:100%;text-align:inherit;font-family:var(--serif);font-weight:700;
+  font-size:clamp(26px,5.6vw,50px);line-height:1.18;letter-spacing:-.01em;
+  transition:color .18s
+}
+.headline-btn:hover{color:var(--accent)}
+.lead-photo{margin:14px 0 10px}
+.lead-photo img{display:block;width:100%;height:auto;border:1px solid var(--rule);
+  filter:grayscale(1) contrast(1.05) sepia(.08)}
+body.colorize .lead-photo img,body.colorize .lead-body img,body.colorize .art-body img{filter:none}
+.cap{font-family:var(--kai);font-size:14px;color:var(--ink-3);margin-top:6px;line-height:1.7}
+.lead-body{font-size:16.5px;line-height:1.95;text-align:justify;min-width:0}
+.lead-body p{margin:0 0 .9em;text-indent:2em}
+.lead-body .fig{margin:12px 0;text-indent:0}
+.lead-body img{max-width:100%;height:auto;display:block;border:1px solid var(--rule-soft);filter:grayscale(1) contrast(1.05) sepia(.08)}
+.cut{font-family:var(--kai);font-size:13px;color:var(--ink-3);margin:4px 0 0;text-align:right}
+
+.rail{margin-top:24px}
+.rail-head{font-family:var(--hei);font-size:13px;letter-spacing:.2em;margin:0 0 2px;
+  padding-bottom:7px;border-bottom:2px solid var(--ink);display:flex;justify-content:space-between;align-items:baseline}
+.rail-head .rail-sub{font-size:10px;letter-spacing:.08em;color:var(--ink-3)}
+.rail-list{list-style:none;margin:0;padding:0}
+.rail-item{display:grid;grid-template-columns:26px minmax(0,1fr);gap:6px;
+  padding:11px 0;border-bottom:1px solid var(--rule-soft)}
+.rail-item .num{font-family:var(--hei);font-size:11px;color:var(--ink-3);line-height:1.9}
+.rail-item .headline-btn{font-size:16px;line-height:1.55;font-weight:400;letter-spacing:0}
+.rail-item .rail-time{grid-column:2;font-family:var(--hei);font-size:11px;color:var(--ink-3);line-height:1.6}
+.rail-more{display:block;width:100%;font-family:var(--hei);font-size:12px;letter-spacing:.08em;
+  color:var(--ink-2);text-align:left;padding:12px 0;min-height:44px;border-bottom:1px solid var(--rule)}
+.rail-more:hover{color:var(--accent)}
+
+/* 版面索引（代替原来的版块长列表，保证头版一屏收住） */
+.rail-index{margin-top:22px}
+.index-list{list-style:none;margin:0;padding:0}
+.index-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;
+  padding:0;min-height:44px;border-bottom:1px solid var(--rule-soft);
+  font-family:var(--hei);font-size:13.5px;color:var(--ink-2);letter-spacing:.04em}
+.index-item .gem{color:var(--ink-3)}
+.index-item .idx-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.index-item .idx-count{font-size:11.5px;color:var(--ink-3);letter-spacing:.02em}
+.index-item:hover{color:var(--accent)}
+.index-item:hover .gem{color:var(--accent)}
+
+/* 本期全版目录：首页列出所有新闻标题 */
+.toc{margin-top:26px;border-top:2px solid var(--ink);padding-top:12px}
+.toc-head{display:flex;align-items:baseline;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.toc-title{font-family:var(--hei);font-size:15px;letter-spacing:.18em}
+.toc-meta{font-family:var(--kai);font-size:12px;color:var(--ink-3)}
+.toc-list{list-style:none;margin:0;padding:0;columns:1;column-gap:26px}
+.toc-item{break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid;
+  border-bottom:1px dotted var(--rule-soft)}
+.toc-btn{display:flex;align-items:baseline;gap:8px;width:100%;text-align:left;
+  padding:7px 0;min-height:34px;font-family:var(--serif);font-size:13.5px;
+  color:var(--ink-2);line-height:1.5}
+.toc-no{flex:none;width:2.1em;font-family:var(--hei);font-size:11px;color:var(--ink-3);letter-spacing:.04em}
+.toc-gem{flex:none;font-family:var(--hei);font-size:10.5px;color:var(--accent);letter-spacing:.05em}
+.toc-text{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.toc-time{flex:none;font-family:var(--kai);font-size:11.5px;color:var(--ink-3)}
+.toc-btn:hover{color:var(--ink)}
+.toc-btn:hover .toc-text{text-decoration:underline;text-underline-offset:2px}
+
+/* ===================================================================
+   6. 各版块（栏目）
+   =================================================================== */
+.sections{display:grid;grid-template-columns:1fr;border-top:2px solid var(--ink);margin-top:26px}
+.section-cell{padding:16px 0 14px;border-bottom:1px solid var(--rule);min-width:0}
+.sec-head{display:flex;align-items:baseline;gap:10px;width:100%;text-align:left; min-height:44px}
+.sec-head .gem{color:var(--ink-3)}
+.sec-title{font-family:var(--hei);font-size:19px;letter-spacing:.06em;font-weight:700}
+.sec-count{font-family:var(--hei);font-size:11px;color:var(--ink-3);margin-left:auto;letter-spacing:.06em}
+.sec-head:hover .sec-title{color:var(--accent)}
+.sec-list{list-style:none;margin:8px 0 0;padding:0}
+.sec-list li{padding:6px 0}
+.sec-list .headline-btn{font-size:15.5px;line-height:1.6;font-weight:400;letter-spacing:0}
+.sec-list time{display:block;font-family:var(--hei);font-size:11px;color:var(--ink-3);line-height:1.7}
+.sec-more{font-family:var(--hei);font-size:11.5px;letter-spacing:.08em;color:var(--ink-3);
+  padding:8px 0;min-height:44px;text-align:left}
+.sec-more:hover{color:var(--accent)}
+
+/* 报尾 */
+.colophon{margin-top:26px;border-top:1px solid var(--ink);padding:14px 0 40px;
+  display:flex;flex-wrap:wrap;gap:6px 18px;font-family:var(--kai);font-size:14px;color:var(--ink-3)}
+.colophon a{text-decoration:underline;text-underline-offset:3px}
+.colophon .copy{width:100%;color:var(--ink-2)}
+
+/* ===================================================================
+   7. 内页（详情/翻页）
+   =================================================================== */
+.detail{display:flex;flex-direction:column;height:100dvh;background:var(--paper)}
+.bar-top{
+  flex:none;display:flex;align-items:center;gap:10px;padding:0 12px;min-height:56px;
+  border-bottom:1px solid var(--ink);background:var(--paper);position:relative;z-index:10
+}
+.link-back{display:inline-flex;align-items:center;gap:6px;font-family:var(--hei);font-size:12.5px;
+  letter-spacing:.1em;min-height:44px;padding:0 6px;border-right:1px solid var(--rule);padding-right:12px}
+.link-back:hover{color:var(--accent)}
+.link-back svg{width:14px;height:14px}
+.top-mid{display:flex;align-items:center;gap:8px;min-width:0;flex:1;overflow:hidden}
+.top-mid .gem{color:var(--ink-3)}
+.top-sec{font-family:var(--hei);font-size:14px;letter-spacing:.1em;white-space:nowrap}
+.top-date{font-family:var(--kai);font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-sep{color:var(--rule);font-size:12px}
+.top-right{display:flex;gap:6px;flex:none}
+
+.stage{
+  position:relative;flex:1;min-height:0;padding:0;
+  perspective:1900px;perspective-origin:62% 46%;
+}
+.sheet{
+  height:100%;position:relative;z-index:2;overflow-y:auto;overflow-x:hidden;
+  background:var(--sheet);border:0;border-top:1px solid var(--rule-soft);
+  box-shadow:0 22px 46px -30px rgba(20,18,14,.62);
+  transform-origin:0% 50%;transform-style:preserve-3d;backface-visibility:hidden;
+  transition:transform .62s cubic-bezier(.42,.02,.28,1);
+  overscroll-behavior:contain;
+}
+.sheet.back{position:absolute;left:0;right:0;top:0;bottom:0;height:auto;z-index:1}
+.sheet.back.above{z-index:3;box-shadow:-26px 16px 54px -24px rgba(20,18,14,.5)}
+.sheet.turn-next{transform:rotateY(-104deg);box-shadow:-40px 20px 70px -26px rgba(20,18,14,.55)}
+.sheet.edge-next{transform:translateX(-7px)}
+.sheet.edge-prev{transform:translateX(7px)}
+.sheet-inner{max-width:840px;margin:0 auto;padding:34px clamp(18px,5vw,76px) 66px}
+
+.sheet-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--hei);
+  font-size:11.5px;letter-spacing:.1em;color:var(--ink-3);padding-bottom:8px;border-bottom:1px solid var(--rule)}
+.sheet-meta .gem{color:var(--accent)}
+.sheet-meta .sec-name{color:var(--ink-2)}
+.art-title{font-size:clamp(24px,6.4vw,42px);line-height:1.22;font-weight:700;margin:14px 0 10px;letter-spacing:-.01em}
+.art-byline{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-family:var(--hei);
+  font-size:11.5px;color:var(--ink-3);padding-bottom:12px;border-bottom:2px solid var(--ink);letter-spacing:.04em}
+.byline-sep{width:1px;height:11px;background:var(--rule)}
+.art-byline a{text-decoration:underline;text-underline-offset:3px;color:var(--ink-2)}
+.art-body{margin-top:16px;font-size:17px;line-height:1.98;text-align:justify;word-break:break-word}
+.art-body p{margin:0 0 1em;text-indent:2em}
+.art-body h2,.art-body h3,.art-body h4{font-family:var(--hei);font-size:17px;letter-spacing:.04em;margin:1.6em 0 .7em;line-height:1.6}
+.art-body .fig,.art-body p:has(> img){text-indent:0;margin:16px 0}
+.art-body img{display:block;max-width:100%;height:auto;border:1px solid var(--rule-soft);
+  filter:grayscale(1) contrast(1.05) sepia(.08);background:#FAFAFA}
+.art-body a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--accent);
+  text-underline-offset:3px;text-decoration-thickness:1px}
+.art-body ul,.art-body ol{padding-left:1.3em;margin:0 0 1em}
+.art-body li{margin:0 0 .4em}
+.art-body blockquote{margin:16px 0;padding:6px 0 6px 14px;border-left:2px solid var(--rule);font-family:var(--kai);color:var(--ink-2)}
+.art-body table{width:100%;border-collapse:collapse;font-size:14px;margin:16px 0}
+.art-body td,.art-body th{border:1px solid var(--rule-soft);padding:6px 8px}
+.art-end{text-align:right;font-family:var(--kai);font-size:13px;color:var(--ink-3);margin-top:14px}
+.sheet-foot{margin-top:22px;padding-top:10px;border-top:1px solid var(--rule);font-family:var(--kai);
+  font-size:12px;color:var(--ink-3);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+
+/* 翻页热区与折角 */
+.turn-zone{position:absolute;top:0;bottom:0;width:14%;z-index:5;background:transparent;border:0}
+.turn-zone.next{right:0;cursor:pointer}
+.turn-zone.prev{left:0;cursor:pointer}
+.turn-zone:disabled{cursor:default}
+.fold{position:absolute;right:12px;bottom:6px;width:42px;height:42px;pointer-events:none;z-index:6;
+  background:linear-gradient(135deg,rgba(20,18,14,0) 48%,var(--paper-2) 50%,var(--sheet) 52%);
+  box-shadow:inset 1px 1px 0 rgba(20,18,14,.18);opacity:.9}
+.press-hint{position:absolute;left:50%;transform:translateX(-50%);bottom:10px;z-index:5;
+  font-family:var(--hei);font-size:11px;letter-spacing:.1em;color:var(--ink-3);
+  background:var(--sheet);padding:2px 10px;pointer-events:none;transition:opacity .3s}
+.press-hint.is-hidden{opacity:0}
+
+.pagebar{
+  flex:none;display:flex;align-items:center;gap:8px;padding:6px 12px;
+  border-top:1px solid var(--ink);background:var(--paper);min-height:60px
+}
+.nav-btn2{display:inline-flex;align-items:center;gap:6px;font-family:var(--hei);font-size:12.5px;
+  letter-spacing:.06em;border:1px solid var(--rule);min-height:44px;padding:0 12px;color:var(--ink-2)}
+.nav-btn2:hover:not(:disabled){border-color:var(--ink);color:var(--ink)}
+.nav-btn2:disabled{opacity:.42;cursor:default}
+.nav-btn2 svg{width:13px;height:13px}
+.dots{flex:1;display:flex;gap:5px;overflow-x:auto;padding:2px 0;scrollbar-width:thin;min-width:0}
+.dot-btn{flex:none;min-width:28px;height:28px;font-family:var(--hei);font-size:11px;color:var(--ink-2);
+  border:1px solid var(--rule);line-height:1;padding:0 5px}
+.dot-btn[aria-current="true"]{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.page-count{font-family:var(--hei);font-size:12px;letter-spacing:.06em;color:var(--ink-2);white-space:nowrap;padding:0 4px}
+
+/* ===================================================================
+   8. 排印中 / 休刊 / 提示
+   =================================================================== */
+.press-state{min-height:70dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:40px 18px;gap:14px}
+.press-mark{font-family:var(--hei);font-size:13px;letter-spacing:.24em;color:var(--ink-3)}
+.press-msg{font-family:var(--hei);font-size:18px;letter-spacing:.08em;margin:0}
+.press-rule{width:min(320px,80%);height:2px;background:var(--rule);position:relative;overflow:hidden}
+.press-rule i{position:absolute;top:0;bottom:0;width:36%;background:var(--accent);
+  animation:sweep 1.5s cubic-bezier(.55,.05,.45,.95) infinite}
+@keyframes sweep{0%{left:-36%}100%{left:100%}}
+.error-sheet{max-width:560px;border:1px solid var(--ink);background:var(--sheet);padding:26px 22px;text-align:left}
+.error-title{font-family:var(--hei);font-size:26px;letter-spacing:.16em;margin:0 0 8px}
+.error-sub{font-family:var(--kai);font-size:13px;color:var(--ink-3);margin:0 0 14px}
+.error-list{margin:0 0 18px;padding-left:1.1em;font-size:13.5px;line-height:1.8;color:var(--ink-2);word-break:break-word}
+.error-acts{display:flex;gap:10px;flex-wrap:wrap}
+.btn-outline{font-family:var(--hei);font-size:13px;letter-spacing:.08em;border:1px solid var(--ink);
+  min-height:44px;padding:0 16px}
+.btn-outline:hover{background:var(--ink);color:var(--sheet)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:28px;z-index:70;
+  font-family:var(--hei);font-size:12.5px;letter-spacing:.06em;color:var(--sheet);
+  background:rgba(20,18,14,.92);padding:8px 14px;margin:0;max-width:80vw;text-align:center;pointer-events:none}
+.theme-dark .toast{color:#141414;background:rgba(238,232,220,.94)}
+
+/* 内页左上角：极小的返回入口（不是栏目条，只有一枚文字） */
+.back-home{position:absolute;right:0;top:0;z-index:7;min-height:44px;
+  padding:0 12px;font-family:var(--hei);font-size:11.5px;letter-spacing:.14em;
+  color:var(--ink-3);background:var(--paper);border:0;border-bottom:1px solid var(--rule-soft);border-left:1px solid var(--rule-soft);
+  opacity:.55;transition:opacity .2s,color .2s}
+.back-home:hover,.back-home:focus-visible{opacity:1;color:var(--accent)}
+
+/* ===================================================================
+   9. 响应式：先窄屏，再宽屏
+   =================================================================== */
+/* 首页 ↔ 内页 的翻版过渡 */
+.turn-wrap{position:fixed;inset:0;z-index:70;perspective:2000px;perspective-origin:58% 50%;pointer-events:none}
+.turn-layer{position:absolute;inset:0;overflow:hidden;background:var(--paper);
+  transform-origin:0% 50%;backface-visibility:hidden;will-change:transform;
+  box-shadow:-34px 10px 64px -26px rgba(0,0,0,.38);
+  transition:transform .68s cubic-bezier(.42,.02,.28,1)}
+.turn-layer .snap{position:absolute;left:0;right:0;top:0;height:100%}
+.turn-wrap.view-home .wrap{display:flex;flex-direction:column;height:100%}
+.turn-layer.is-turning{transform:rotateY(-104deg)}
+.turn-layer::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:linear-gradient(to left,rgba(0,0,0,.24),rgba(0,0,0,0) 46%);transition:opacity .68s}
+.turn-layer.is-turning::after{opacity:1}
+
+@media (min-width:600px){
+  .wrap{padding:0 24px}
+  .sections{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:26px}
+  .section-cell{border-bottom:1px solid var(--rule)}
+  .sheet-inner{padding:28px 30px 48px}
+  .lead-body{columns:2;column-gap:28px;column-rule:1px solid var(--rule-soft)}
+}
+@media (min-width:900px){
+  .masthead{padding-top:26px}
+  .mast-row{padding:20px 0 14px}
+  .front{display:grid;grid-template-columns:minmax(0,2.02fr) minmax(0,1fr);
+    column-gap:0;padding-top:22px}
+  .lead{padding-right:30px;border-right:1px solid var(--rule)}
+  .rail{margin-top:0;padding-left:30px}
+  .sections{grid-template-columns:repeat(3,minmax(0,1fr));column-gap:0;margin-top:30px}
+  .section-cell{padding:20px 26px 16px;border-bottom:1px solid var(--rule);border-left:1px solid var(--rule-soft)}
+  .section-cell:nth-child(3n+1){border-left:0;padding-left:0}
+  .section-cell:nth-child(3n){padding-right:0}
+  .headline-btn{font-size:clamp(30px,3.5vw,50px)}
+  .mini{min-height:34px;font-size:12.5px}
+  .stage{padding:0}
+  .sheet.back{left:0;right:0;top:0}
+  .turn-zone{top:0;bottom:0;width:10%}
+  .fold{right:10px;bottom:10px}
+  .art-body{columns:2;column-gap:32px;column-rule:1px solid var(--rule-soft);font-size:17.5px}
+  .toc-list{columns:2}
+  .art-body .fig,.art-body p:has(>img){break-inside:avoid}
+  .sheet-inner{max-width:1040px;padding:34px 44px 56px}
+}
+/* 宽屏：头版与内页都铺满整个屏幕 */
+@media (min-width:1024px){
+  body.view-home{height:100dvh;overflow:hidden}
+  body.view-home #view{height:100%;display:flex;flex-direction:column}
+  .view-home .wrap{flex:1;min-height:0;display:flex;flex-direction:column;padding:0 clamp(24px,3.2vw,64px)}
+  .view-home .masthead{flex:none}
+  .view-home .front{flex:1;min-height:0;overflow:hidden}
+  .view-home .lead,.view-home .rail{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;min-height:0;padding-bottom:8px}
+  .view-home .colophon{flex:none;margin-top:10px;padding:8px 0 10px;gap:4px 16px;font-size:12.5px;line-height:1.6}
+  .view-home .colophon .copy{width:auto;flex:1;min-width:280px}
+
+  .stage{padding:0}
+  .sheet.back{left:0;right:0;top:0}
+  .view-detail .sheet{border-left:0;border-right:0;box-shadow:none}
+  .turn-zone{top:0;bottom:0}
+  .fold{right:8px;bottom:8px}
+  .bar-top{padding:0 clamp(20px,3.2vw,64px)}
+  .pagebar{padding:6px clamp(20px,3.2vw,64px)}
+}
+@media (min-width:1400px){
+  .toc-list{columns:3}
+}
+@media (max-width:520px){
+  .bar-top{min-height:52px;padding:0 10px;gap:6px}
+  .link-back{font-size:12px;padding-right:9px;gap:4px}
+  .top-mid .top-sep,.top-mid .top-date{display:none}
+  .top-right .mini[data-act="refresh"]{display:none}
+  .mini{font-size:12.5px;padding:0 9px}
+  .nav-btn2{font-size:12px;padding:0 9px;gap:4px}
+  .sec-more,.rail-more{font-size:12.5px}
+}
+@media (max-width:899px){
+  .front{display:block}
+  .lead-photo img{max-height:56vh;object-fit:cover;object-position:center 30%}
+}
+@media (prefers-reduced-motion:reduce){
+  .sheet{transition:none}
+  .turn-layer,.turn-layer::after{transition:none}
+  .press-rule i{animation:none;left:0;width:100%}
+  .headline-btn,.mini,.nav-btn{transition:none}
+}
+</style>
+</head>
+<body class="view-home colorize theme-sepia">
+
+<div class="paper-grain" aria-hidden="true"></div>
+
+<!-- ===== 启动：订阅地址 ===== -->
+<div class="modal" id="modal">
+  <div class="modal-veil"></div>
+  <div class="modal-card" id="modalCard">
+    <div class="modal-rule"></div>
+    <p class="modal-kicker">纯网页 · 单文件 · 无需安装</p>
+    <h1 class="modal-title">RSS 报纸阅读器</h1>
+    <p class="modal-desc">输入一个 RSS 或 Atom 订阅地址，本刊把它排成一份传统报纸：报头、日期、分栏版面，点开栏目后可以像翻报纸一样翻页读文章。</p>
+    <p class="modal-desc">下面选一个订阅源，点一下即刻排印；也可以粘贴任意 RSS / Atom 地址，本刊会把它排成一份传统报纸。</p>
+    <div class="feed-pick-head">
+      <span class="pick-title">常用订阅源</span>
+      <span class="pick-hint">点选后按「开印」</span>
+    </div>
+    <div class="feed-pick" id="feedPick" aria-label="常用订阅源"><div class="feed-group">中文科技</div><button type="button" class="feed-opt" data-url="https://www.ithome.com/rss/" aria-pressed="false" title="https://www.ithome.com/rss/"><span class="fo-name">IT之家</span><span class="fo-n">60 条</span></button><button type="button" class="feed-opt" data-url="https://www.ifanr.com/feed" aria-pressed="false" title="https://www.ifanr.com/feed"><span class="fo-name">爱范儿</span><span class="fo-n">34 条</span></button><button type="button" class="feed-opt" data-url="https://sspai.com/feed" aria-pressed="false" title="https://sspai.com/feed"><span class="fo-name">少数派</span><span class="fo-n">20 条</span></button><button type="button" class="feed-opt" data-url="https://www.tmtpost.com/rss.xml" aria-pressed="false" title="https://www.tmtpost.com/rss.xml"><span class="fo-name">钛媒体</span><span class="fo-n">50 条</span></button><button type="button" class="feed-opt" data-url="https://www.solidot.org/index.rss" aria-pressed="false" title="https://www.solidot.org/index.rss"><span class="fo-name">Solidot</span><span class="fo-n">45 条</span></button><button type="button" class="feed-opt" data-url="https://rss.sina.com.cn/tech/rollnews.xml" aria-pressed="false" title="https://rss.sina.com.cn/tech/rollnews.xml"><span class="fo-name">新浪科技</span><span class="fo-n">15 条</span></button><div class="feed-group">软件与博客</div><button type="button" class="feed-opt" data-url="https://www.iplaysoft.com/feed" aria-pressed="false" title="https://www.iplaysoft.com/feed"><span class="fo-name">异次元软件世界</span><span class="fo-n">30 条</span></button><button type="button" class="feed-opt" data-url="https://www.appinn.com/feed" aria-pressed="false" title="https://www.appinn.com/feed"><span class="fo-name">小众软件</span><span class="fo-n">10 条</span></button><button type="button" class="feed-opt" data-url="https://www.ruanyifeng.com/blog/atom.xml" aria-pressed="false" title="https://www.ruanyifeng.com/blog/atom.xml"><span class="fo-name">阮一峰的网络日志</span><span class="fo-n">4 条</span></button><div class="feed-group">海外科技</div><button type="button" class="feed-opt" data-url="https://hnrss.org/frontpage" aria-pressed="false" title="https://hnrss.org/frontpage"><span class="fo-name">Hacker News</span><span class="fo-n">50 条</span></button><button type="button" class="feed-opt" data-url="https://techcrunch.com/feed/" aria-pressed="false" title="https://techcrunch.com/feed/"><span class="fo-name">TechCrunch</span><span class="fo-n">50 条</span></button><button type="button" class="feed-opt" data-url="https://www.theverge.com/rss/index.xml" aria-pressed="false" title="https://www.theverge.com/rss/index.xml"><span class="fo-name">The Verge</span><span class="fo-n">50 条</span></button><button type="button" class="feed-opt" data-url="https://feeds.arstechnica.com/arstechnica/index" aria-pressed="false" title="https://feeds.arstechnica.com/arstechnica/index"><span class="fo-name">Ars Technica</span><span class="fo-n">50 条</span></button></div>
+    <label class="field-label" for="feedInput">或粘贴其他订阅地址</label>
+    <div class="field">
+      <input id="feedInput" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://example.com/rss.xml" value="">
+      <button type="button" class="btn-inline" id="startBtn">开印</button>
+    </div>
+    <p class="modal-status" id="modalStatus" hidden=""></p>
+    <p class="modal-note">取源经公共 CORS 代理，需联网。首次排印通常数秒，源越大越慢。</p>
+  </div>
+</div>
+
+<main id="view"></main>
+
+<p class="toast" id="toast" role="status" aria-live="polite" hidden=""></p>
+
+<!-- ===== 阅读器逻辑 ===== -->
+<script>
+(function(){
+'use strict';
+
+/* ===================================================================
+   基础工具
+   =================================================================== */
+var EL = function(id){ return document.getElementById(id); };
+var ESC_MAP = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+function esc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){ return ESC_MAP[c]; }); }
+function pad2(n){ return String(n).padStart(2, '0'); }
+var TZ = 'Asia/Shanghai';
+var REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+var FLIP_MS = REDUCED ? 0 : 620;
+var FEED_TIMEOUT = 12000;
+
+var ICON = {
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M15 4l-8 8 8 8"/></svg>',
+  prev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M15 4l-8 8 8 8"/></svg>',
+  next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 4l8 8-8 8"/></svg>'
+};
+
+/* ===================================================================
+   版次（栏目）定义：RSS 无 category 时按标题关键词归版
+   =================================================================== */
+var SECTION_DEFS = [
+  { id:'head', code:'A01', name:'要闻', kw:['政策','监管','声明','通报','回应','官方','总局','工信部','发改委','国务院','央行','部委','召回','事故','处罚','规定','条例','条例','立冬','节气','天气','预警','法院','警方','消协','民政','教育','医疗','消费提示'] },
+  { id:'tech', code:'A02', name:'科技数码', kw:['华为','小米','苹果','iPhone','iPad','Mac','鸿蒙','安卓','iOS','ColorOS','OriginOS','澎湃','芯片','处理器','骁龙','天玑','麒麟','英特尔','Intel','AMD','显卡','内存','硬盘','SSD','主板','路由','耳机','音箱','相机','镜头','屏幕','折叠屏','平板','笔记本','手机','手表','手环','充电','电池','微信','支付宝','App','应用','系统','固件','键盘','鼠标','显示器','投影','电视','空调','扫地机','充电宝','荣耀','OPPO','vivo','一加','realme','三星','联想','戴尔','华硕','红米','Redmi','存储','接口','USB'] },
+  { id:'ai', code:'A03', name:'人工智能', kw:['AI','人工智能','大模型','OpenAI','GPT','ChatGPT','Claude','Gemini','Sora','算力','智能体','Agent','机器人','深度学习','神经网络','算法','英伟达','谷歌','微软','Meta','字节','豆包','通义','文心','混元','Kimi','DeepSeek','开源','数据中心','服务器','量子','Token','模型'] },
+  { id:'game', code:'A04', name:'游戏娱乐', kw:['游戏','《','Steam','PS5','PlayStation','Xbox','任天堂','Switch','主机','电竞','联赛','赛事','米哈游','鸣潮','原神','崩坏','王者荣耀','英雄联盟','DLC','MOD','玩家','开服','测试服','公测','电影','票房','剧集','短剧','综艺','音乐','动画','漫画','演唱会','影视','影院','小说','番剧'] },
+  { id:'auto', code:'A05', name:'汽车出行', kw:['汽车','车型','车主','特斯拉','比亚迪','理想','蔚来','小鹏','问界','极氪','零跑','智驾','辅助驾驶','自动驾驶','续航','充电桩','换电','电池包','雷军','SUV','MPV','轿车','销量','交付','车机','轮胎','高速','航班','铁路','地铁','出行','打车','Robotaxi'] },
+  { id:'biz', code:'A06', name:'产业财经', kw:['财报','营收','净利润','毛利','股价','股市','指数','A股','港股','美股','融资','IPO','上市','市值','美元','亿元','投资','收购','并购','裁员','涨薪','涨价','降价','供应链','出货量','市场份额','订单','出口','关税','利率','汇率','通胀','GDP'] }
+];
+
+var RAW_PROXIES = [
+  function(u){ return u; },
+  function(u){ return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u); },
+  function(u){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
+  function(u){ return 'https://api.cors.lol/?url=' + encodeURIComponent(u); },
+  function(u){ return 'https://corsproxy.io/?url=' + encodeURIComponent(u); }
+];
+
+var state = {
+  feedUrl: '',
+  feed: { title: '', link: '', description: '' },
+  articles: [],
+  sections: [],
+  view: 'boot',
+  cur: { secId: '', idx: 0 },
+  animating: false,
+  colorize: true,
+  theme: 'sepia',
+  appliedHash: ''
+};
+var pendingRestore = null;
+var toastTimer = null;
+
+/* ===================================================================
+   时间格式化（统一按北京时间）
+   =================================================================== */
+function dtParts(d, opts){
+  var out = {};
+  try{
+    var f = new Intl.DateTimeFormat('zh-CN', Object.assign({ timeZone: TZ, hourCycle: 'h23' }, opts));
+    f.formatToParts(d).forEach(function(p){ if(p.type !== 'literal') out[p.type] = p.value; });
+  }catch(e){
+    out.year = String(d.getFullYear()); out.month = pad2(d.getMonth() + 1);
+    out.day = pad2(d.getDate()); out.hour = pad2(d.getHours()); out.minute = pad2(d.getMinutes());
+  }
+  if(out.hour === '24') out.hour = '00';
+  return out;
+}
+function fmtTime(d){
+  if(!d) return '时间未知';
+  var p = dtParts(d, { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return p.month + '-' + p.day + ' ' + p.hour + ':' + p.minute;
+}
+function fmtFull(d){
+  if(!d) return '时间未知';
+  var p = dtParts(d, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return p.year + '-' + p.month + '-' + p.day + ' ' + p.hour + ':' + p.minute;
+}
+function todayLine(){
+  var p = dtParts(new Date(), { year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'long' });
+  return p.year + '年' + p.month + '月' + p.day + '日 ' + p.weekday;
+}
+function clockNow(){
+  var p = dtParts(new Date(), { hour: '2-digit', minute: '2-digit' });
+  return p.hour + ':' + p.minute;
+}
+/* rss2json 的 pubDate 以 GMT 归一化输出，无时区标记时按 UTC 解释 */
+function parseDate(s){
+  if(!s) return null;
+  s = String(s).trim();
+  if(!s) return null;
+  if(/^[A-Za-z]{3},/.test(s) || /(Z|GMT|UTC|\+[0-9]{2}:[0-9]{2}|-[0-9]{2}:[0-9]{2})$/.test(s)){
+    var d0 = new Date(s);
+    if(!isNaN(d0)) return d0;
+  }
+  var m = s.match(/^([0-9]{4})-([0-9]{2})-([0-9]{2})(?:[ T]([0-9]{2}):([0-9]{2})(?::([0-9]{2}))?)?/);
+  if(m){
+    var d1 = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)));
+    if(!isNaN(d1)) return d1;
+  }
+  var d2 = new Date(s.replace(/\.\d+/, ''));
+  return isNaN(d2) ? null : d2;
+}
+
+/* ===================================================================
+   正文清洗：只留排版需要的标签，去掉脚本、样式、内联属性与跟踪参数
+   =================================================================== */
+var KEEP_TAGS = /^(P|BR|IMG|A|H2|H3|H4|H5|UL|OL|LI|STRONG|B|EM|I|U|BLOCKQUOTE|FIGURE|FIGCAPTION|TABLE|THEAD|TBODY|TR|TD|TH|PRE|CODE|SPAN|DIV|SECTION|DEL|S|SMALL|SUP|SUB|HR)$/;
+
+function sanitize(html){
+  if(!html) return '';
+  var doc = new DOMParser().parseFromString('<div id="__root">' + html + '</div>', 'text/html');
+  var root = doc.getElementById('__root');
+  if(!root) return '';
+
+  root.querySelectorAll('script,style,iframe,object,embed,form,input,button,select,textarea,link,meta,svg,video,audio,canvas,noscript,base,template').forEach(function(n){ n.remove(); });
+
+  Array.prototype.slice.call(root.querySelectorAll('*')).forEach(function(el){
+    if(!KEEP_TAGS.test(el.tagName)){
+      var frag = doc.createDocumentFragment();
+      while(el.firstChild){ frag.appendChild(el.firstChild); }
+      el.replaceWith(frag);
+    }
+  });
+
+  Array.prototype.slice.call(root.querySelectorAll('*')).forEach(function(el){
+    var tag = el.tagName;
+    var keepAttrs = tag === 'IMG' ? ['src', 'alt'] : (tag === 'A' ? ['href'] : []);
+    Array.prototype.slice.call(el.attributes).forEach(function(a){
+      if(keepAttrs.indexOf(a.name) === -1) el.removeAttribute(a.name);
+    });
+    if(tag === 'IMG'){
+      var src = el.getAttribute('src') || '';
+      if(/^\/\//.test(src)) src = 'https:' + src;
+      if(!/^(https?:|data:image)/i.test(src)){ el.remove(); return; }
+      el.setAttribute('src', src);
+      el.setAttribute('alt', el.getAttribute('alt') || '配图');
+      el.setAttribute('loading', 'lazy');
+      el.setAttribute('decoding', 'async');
+      el.setAttribute('referrerpolicy', 'no-referrer');
+    }
+    if(tag === 'A'){
+      var href = el.getAttribute('href') || '';
+      if(!/^(https?:)?\/\//i.test(href)){ el.removeAttribute('href'); }
+      else{
+        if(/^\/\//.test(href)) href = 'https:' + href;
+        el.setAttribute('href', href);
+        el.setAttribute('target', '_blank');
+        el.setAttribute('rel', 'noopener noreferrer');
+      }
+    }
+  });
+
+  root.querySelectorAll('p').forEach(function(p){
+    if(!p.querySelector('img') && !(p.textContent || '').replace(/\s|\u00a0/g, '')) p.remove();
+  });
+  root.querySelectorAll('p').forEach(function(p){
+    if(p.querySelector('img') && !(p.textContent || '').trim() && !p.className) p.classList.add('fig');
+  });
+
+  return root.innerHTML;
+}
+
+function htmlToText(html){
+  var t = document.createElement('div');
+  t.innerHTML = html || '';
+  return (t.textContent || '').replace(/\s+/g, ' ').trim();
+}
+function firstImage(html){
+  var t = document.createElement('div');
+  t.innerHTML = html || '';
+  var img = t.querySelector('img');
+  return img ? (img.getAttribute('src') || '') : '';
+}
+function makeExcerpt(text){
+  var s = String(text || '').trim();
+  s = s.replace(/^IT之家[\s0-9]{0,12}(?:月|日)?[^，,]{0,20}(?:消息|报道|讯)[，,]\s*/, '');
+  if(!s) return '';
+  if(s.length > 92) s = s.slice(0, 92).replace(/[，,、；;：:\s]+$/, '') + '…';
+  return s;
+}
+
+/* ===================================================================
+   条目归一化与归类
+   =================================================================== */
+function toArticle(raw){
+  var title = String(raw.title || '').trim();
+  var html = sanitize(raw.content || raw.description || '');
+  var plain = htmlToText(html);
+  var link = String(raw.link || '').trim();
+  if(/^\/\//.test(link)) link = 'https:' + link;
+  return {
+    title: title || '(无标题)',
+    link: link,
+    date: parseDate(raw.pubDate),
+    html: html,
+    text: plain,
+    excerpt: makeExcerpt(plain),
+    img: firstImage(html),
+    secId: 'head'
+  };
+}
+function classify(title){
+  var best = 'head', bestScore = 0;
+  for(var i = 1; i < SECTION_DEFS.length; i++){
+    var def = SECTION_DEFS[i], score = 0;
+    for(var k = 0; k < def.kw.length; k++){
+      if(title.indexOf(def.kw[k]) > -1) score += (def.kw[k].length >= 4 ? 2 : 1);
+    }
+    if(score > bestScore){ bestScore = score; best = def.id; }
+  }
+  return bestScore > 0 ? best : 'head';
+}
+function buildSections(){
+  var secs = SECTION_DEFS.map(function(d){ return { id: d.id, code: d.code, name: d.name, items: [] }; });
+  var byId = {};
+  secs.forEach(function(s){ byId[s.id] = s; });
+  state.articles.forEach(function(a){
+    var id = classify(a.title);
+    a.secId = id;
+    byId[id].items.push(a);
+  });
+  var head = byId.head, top = state.articles[0];
+  if(top && top.secId !== 'head'){
+    var from = byId[top.secId];
+    from.items = from.items.filter(function(x){ return x !== top; });
+    head.items.unshift(top);
+    top.secId = 'head';
+  }
+  state.sections = secs.filter(function(s){ return s.items.length > 0; });
+}
+function sectionOf(a){
+  if(!a) return state.sections[0];
+  return state.sections.filter(function(s){ return s.items.indexOf(a) > -1; })[0] || state.sections[0];
+}
+function curSec(){
+  return state.sections.filter(function(s){ return s.id === state.cur.secId; })[0] || state.sections[0] || null;
+}
+function feedHost(){
+  var u = state.feed.link || state.feedUrl;
+  try{ return new URL(u).hostname.replace(/^www\./, ''); }catch(e){ return u || ''; }
+}
+function hostOf(u){
+  try{ return new URL(u).hostname.replace(/^www\./, ''); }catch(e){ return ''; }
+}
+
+/* ===================================================================
+   取源：先 rss2json，失败再走公共 CORS 代理直取 XML
+   =================================================================== */
+function fetchText(url, ms){
+  var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  var timer = setTimeout(function(){ if(ctrl) ctrl.abort(); }, ms || FEED_TIMEOUT);
+  var opt = { cache: 'no-store' };
+  if(ctrl) opt.signal = ctrl.signal;
+  return fetch(url, opt).then(function(r){
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.text();
+  }).then(function(t){ clearTimeout(timer); return t; }).catch(function(e){
+    clearTimeout(timer);
+    throw (e && e.name === 'AbortError') ? new Error('请求超时') : e;
+  });
+}
+function pickText(node, names){
+  for(var i = 0; i < names.length; i++){
+    var list;
+    try{ list = node.getElementsByTagName(names[i]); }catch(e){ list = []; }
+    if(list && list.length){
+      var v = String(list[0].textContent || '').trim();
+      if(v) return v;
+    }
+  }
+  return '';
+}
+function itemLink(node){
+  var links = node.getElementsByTagName('link'), i, l, href;
+  for(i = 0; i < links.length; i++){
+    l = links[i];
+    href = l.getAttribute ? l.getAttribute('href') : '';
+    if(href) return href;
+    var txt = String(l.textContent || '').trim();
+    if(txt) return txt;
+  }
+  return pickText(node, ['guid', 'id']);
+}
+function parseFeedXML(txt){
+  var doc = new DOMParser().parseFromString(txt, 'text/xml');
+  if(doc.getElementsByTagName('parsererror').length) throw new Error('返回内容不是合法的 XML');
+  var channel = doc.getElementsByTagName('channel')[0] || doc.documentElement;
+  var title = pickText(channel, ['title']) || '';
+  var description = pickText(channel, ['description', 'subtitle']) || '';
+  var link = '';
+  try{
+    var chLinks = channel.getElementsByTagName('link');
+    for(var i = 0; i < chLinks.length; i++){
+      var h = chLinks[i].getAttribute ? chLinks[i].getAttribute('href') : '';
+      if(h){ link = h; break; }
+      var t = String(chLinks[i].textContent || '').trim();
+      if(t){ link = t; break; }
+    }
+  }catch(e){ /* 忽略 */ }
+  var nodes = Array.prototype.slice.call(doc.getElementsByTagName('item'));
+  if(!nodes.length) nodes = Array.prototype.slice.call(doc.getElementsByTagName('entry'));
+  var items = nodes.map(function(n){
+    return {
+      title: pickText(n, ['title']),
+      link: itemLink(n),
+      pubDate: pickText(n, ['pubDate', 'dc:date', 'published', 'updated', 'date', 'created']),
+      content: pickText(n, ['content:encoded', 'content', 'description', 'summary'])
+    };
+  });
+  return { title: title, link: link, description: description, items: items };
+}
+function loadFeed(url){
+  var errs = [];
+  return fetchText('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(url) + '&count=50', FEED_TIMEOUT)
+    .then(function(t){
+      var j = JSON.parse(t);
+      if(j && j.status === 'ok' && j.items && j.items.length){
+        return {
+          title: (j.feed && j.feed.title) || '',
+          link: (j.feed && j.feed.link) || url,
+          description: (j.feed && j.feed.description) || '',
+          items: j.items.map(function(it){
+            return {
+              title: it.title || '',
+              link: it.link || it.guid || '',
+              pubDate: it.pubDate || it.isoDate || '',
+              content: it.content || it.description || it.summary || ''
+            };
+          })
+        };
+      }
+      throw new Error('rss2json 返回空结果' + (j && j.message ? '（' + j.message + '）' : ''));
+    })
+    .catch(function(e){
+      errs.push('rss2json：' + (e.message || e));
+      return chainProxies(url, errs, 0);
+    })
+    .then(function(data){
+      if(data) return data;
+      var err = new Error('无法取到订阅内容');
+      err.details = errs;
+      throw err;
+    });
+}
+function chainProxies(url, errs, i){
+  if(i >= RAW_PROXIES.length) return Promise.resolve(null);
+  var target = RAW_PROXIES[i](url);
+  var label = '代理 ' + (hostOf(target) || '直连');
+  return fetchText(target, FEED_TIMEOUT).then(function(txt){
+    if(!/<rss|<feed[ >]|<channel/i.test(txt)){
+      errs.push(label + '：返回的不是订阅内容');
+      return chainProxies(url, errs, i + 1);
+    }
+    var parsed = parseFeedXML(txt);
+    if(parsed.items && parsed.items.length){
+      parsed.link = parsed.link || url;
+      return parsed;
+    }
+    errs.push(label + '：订阅里没有条目');
+    return chainProxies(url, errs, i + 1);
+  }).catch(function(e){
+    errs.push(label + '：' + (e.message || e));
+    return chainProxies(url, errs, i + 1);
+  });
+}
+
+/* ===================================================================
+   页面：排印中 / 休刊 / 提示
+   =================================================================== */
+var THEMES = [
+  { id: 'white', name: '白纸' },
+  { id: 'sepia', name: '米黄纸' },
+  { id: 'grey', name: '浅灰纸' },
+  { id: 'dark', name: '夜读' }
+];
+
+/* 常用订阅源：g 为分组标题，其余为可点选的源 */
+var FEEDS = [
+  { g: '中文科技' },
+  { name: 'IT之家', url: 'https://www.ithome.com/rss/', n: 60 },
+  { name: '爱范儿', url: 'https://www.ifanr.com/feed', n: 34 },
+  { name: '少数派', url: 'https://sspai.com/feed', n: 20 },
+  { name: '钛媒体', url: 'https://www.tmtpost.com/rss.xml', n: 50 },
+  { name: 'Solidot', url: 'https://www.solidot.org/index.rss', n: 45 },
+  { name: '新浪科技', url: 'https://rss.sina.com.cn/tech/rollnews.xml', n: 15 },
+  { g: '软件与博客' },
+  { name: '异次元软件世界', url: 'https://www.iplaysoft.com/feed', n: 30 },
+  { name: '小众软件', url: 'https://www.appinn.com/feed', n: 10 },
+  { name: '阮一峰的网络日志', url: 'https://www.ruanyifeng.com/blog/atom.xml', n: 4 },
+  { g: '海外科技' },
+  { name: 'Hacker News', url: 'https://hnrss.org/frontpage', n: 50 },
+  { name: 'TechCrunch', url: 'https://techcrunch.com/feed/', n: 50 },
+  { name: 'The Verge', url: 'https://www.theverge.com/rss/index.xml', n: 50 },
+  { name: 'Ars Technica', url: 'https://feeds.arstechnica.com/arstechnica/index', n: 50 }
+];
+function renderFeedPick(){
+  var box = EL('feedPick');
+  if(!box) return;
+  box.innerHTML = FEEDS.map(function(f){
+    if(f.g) return '<div class="feed-group">' + esc(f.g) + '</div>';
+    return '<button type="button" class="feed-opt" data-url="' + esc(f.url) + '" aria-pressed="false" title="' + esc(f.url) + '">' +
+      '<span class="fo-name">' + esc(f.name) + '</span>' +
+      '<span class="fo-n">' + f.n + ' 条</span></button>';
+  }).join('');
+}
+function syncFeedPick(url){
+  url = String(url || '').trim();
+  Array.prototype.slice.call(document.querySelectorAll('.feed-opt')).forEach(function(b){
+    b.setAttribute('aria-pressed', b.getAttribute('data-url') === url ? 'true' : 'false');
+  });
+}
+function setBodyView(v){
+  var cls = 'view-' + v;
+  if(state.colorize) cls += ' colorize';
+  if(state.theme && state.theme !== 'white') cls += ' theme-' + state.theme;
+  document.body.className = cls;
+}
+function themeName(){
+  var t = THEMES.filter(function(x){ return x.id === state.theme; })[0];
+  return t ? t.name : THEMES[0].name;
+}
+function syncThemeButtons(){
+  Array.prototype.slice.call(document.querySelectorAll('[data-act="theme"]')).forEach(function(b){
+    b.textContent = '底色·' + themeName();
+    b.setAttribute('title', '切换底色（当前：' + themeName() + '）');
+  });
+}
+function cycleTheme(){
+  var i = 0;
+  THEMES.forEach(function(t, ix){ if(t.id === state.theme) i = ix; });
+  state.theme = THEMES[(i + 1) % THEMES.length].id;
+  setBodyView(state.view === 'detail' ? 'detail' : 'home');
+  syncThemeButtons();
+  try{ localStorage.setItem('rsspaper:theme', state.theme); }catch(e){}
+  toast('底色已换为「' + themeName() + '」');
+}
+
+function pressOn(text){
+  setBodyView('home');
+  var view = EL('view');
+  if(!view) return;
+  view.innerHTML = '<div class="press-state">' +
+    '<div class="press-mark">RSS 报纸阅读器</div>' +
+    '<p class="press-msg">' + esc(text || '正在排印') + '</p>' +
+    '<div class="press-rule"><i></i></div>' +
+    '</div>';
+}
+function renderError(details){
+  state.view = 'error';
+  setBodyView('home');
+  var list = (details || ['未知错误']).map(function(d){ return '<li>' + esc(d) + '</li>'; }).join('');
+  EL('view').innerHTML = '<div class="press-state"><div class="error-sheet">' +
+    '<h2 class="error-title">今 日 休 刊</h2>' +
+    '<p class="error-sub">取不到订阅内容，这一期无法付印。</p>' +
+    '<ul class="error-list">' + list + '</ul>' +
+    '<div class="error-acts">' +
+      '<button class="btn-outline" type="button" data-act="retry">重试</button>' +
+      '<button class="btn-outline" type="button" data-act="resub">更换订阅地址</button>' +
+    '</div></div></div>';
+}
+function toast(msg){
+  var t = EL('toast');
+  if(!t) return;
+  t.textContent = msg;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.hidden = true; }, 2400);
+}
+
+/* ===================================================================
+   头版（报纸首页）
+   =================================================================== */
+function leadFragment(html, maxParas){
+  var tmp = document.createElement('div');
+  tmp.innerHTML = html || '';
+  var out = document.createElement('div');
+  out.className = 'lead-body';
+  var n = 0;
+  Array.prototype.slice.call(tmp.children).forEach(function(el){
+    var tag = el.tagName;
+    if(tag === 'P'){
+      if(n >= maxParas) return;
+      n++;
+      out.appendChild(el.cloneNode(true));
+    }else if(/^H[2-4]$/.test(tag) || tag === 'UL' || tag === 'OL'){
+      if(n >= maxParas) return;
+      out.appendChild(el.cloneNode(true));
+    }
+  });
+  out.querySelectorAll('img').forEach(function(img){
+    var p = img.closest('p.fig') || img.parentNode;
+    if(p && p.classList && p.classList.contains('fig')){ p.remove(); }
+    else{ img.remove(); }
+  });
+  out.querySelectorAll('p').forEach(function(p){
+    if(!p.querySelector('img') && !(p.textContent || '').replace(/\s|\u00a0/g, '')) p.remove();
+  });
+  if(!out.children.length){
+    out.innerHTML = '<p>' + esc(makeExcerpt(htmlToText(html)) || '本条目未提供摘要。') + '</p>';
+  }
+  return out.outerHTML;
+}
+
+function headlineBtn(a, sec, extraClass){
+  var idx = sec.items.indexOf(a);
+  return '<button class="headline-btn ' + (extraClass || '') + '" type="button" data-act="open" data-sec="' + esc(sec.id) + '" data-idx="' + idx + '">' + esc(a.title) + '</button>';
+}
+
+function renderHome(){
+  state.view = 'home';
+  setBodyView('home');
+  var view = EL('view');
+  var arts = state.articles;
+  if(!arts.length){ view.innerHTML = ''; return; }
+  var secs = state.sections;
+  var lead = arts[0];
+  var leadSec = sectionOf(lead);
+  var latest = arts.slice(1, 9);
+  var host = feedHost();
+
+  var navHTML = secs.map(function(s){
+    return '<button class="nav-btn" type="button" data-act="section" data-sec="' + esc(s.id) + '">' +
+      '<span class="gem">' + esc(s.code) + '</span>' + esc(s.name) +
+      '<span class="nav-count">' + s.items.length + '</span></button>';
+  }).join('');
+
+  var railHTML = latest.map(function(a, i){
+    var sec = sectionOf(a);
+    return '<li class="rail-item">' +
+      '<span class="num">' + pad2(i + 1) + '</span>' +
+      headlineBtn(a, sec) +
+      '<span class="rail-time">' + esc(fmtTime(a.date)) + ' · ' + esc(sec.name) + '</span>' +
+      '</li>';
+  }).join('');
+
+  var indexHTML = secs.map(function(s){
+    return '<li><button class="index-item" type="button" data-act="section" data-sec="' + esc(s.id) + '">' +
+      '<span class="gem">' + esc(s.code) + '</span>' +
+      '<span class="idx-name">' + esc(s.name) + '</span>' +
+      '<span class="idx-count">' + s.items.length + ' 篇</span>' +
+      '</button></li>';
+  }).join('');
+
+  var tocHTML = arts.map(function(a, i){
+    var sec = sectionOf(a);
+    var ix = sec.items.indexOf(a);
+    return '<li class="toc-item"><button type="button" class="toc-btn" data-act="open" data-sec="' + esc(sec.id) + '" data-idx="' + (ix < 0 ? 0 : ix) + '">' +
+      '<span class="toc-no">' + pad2(i + 1) + '</span>' +
+      '<span class="toc-gem">' + esc(sec.code) + '</span>' +
+      '<span class="toc-text">' + esc(a.title) + '</span>' +
+      '<span class="toc-time">' + esc(fmtTime(a.date)) + '</span>' +
+      '</button></li>';
+  }).join('');
+
+  view.innerHTML =
+  '<div class="wrap">' +
+    '<header class="masthead">' +
+      '<div class="mast-eyebrow"><span>互联网 · 数码 · 科技 · 生活</span><span>' + esc(host) + '</span></div>' +
+      '<div class="mast-row"><h1 class="feed-title">' + esc(state.feed.title || '每日新闻') + '</h1></div>' +
+      '<div class="mast-dateline">' +
+        '<span>第 A01 版</span><span class="rule-v"></span>' +
+        '<span>' + esc(todayLine()) + '</span><span class="rule-v"></span>' +
+        '<span>共 ' + arts.length + ' 篇</span><span class="rule-v"></span>' +
+        '<span>' + secs.length + ' 个栏目</span><span class="rule-v"></span>' +
+        '<span>排印 ' + esc(clockNow()) + '</span>' +
+      '</div>' +
+      '<div class="rule-double"></div>' +
+      '<nav class="nav-strip" aria-label="版次导航">' + navHTML +
+        '<div class="nav-tools">' +
+          '<button class="mini" type="button" data-act="theme" title="切换底色（当前：' + esc(themeName()) + '）">底色·' + esc(themeName()) + '</button>' +
+          '<button class="mini" type="button" data-act="color" aria-pressed="' + state.colorize + '">彩色图</button>' +
+          '<button class="mini" type="button" data-act="refresh">刷新</button>' +
+          '<button class="mini" type="button" data-act="resub">换源</button>' +
+        '</div>' +
+      '</nav>' +
+    '</header>' +
+    '<section class="front">' +
+      '<article class="lead">' +
+        '<div class="lead-kicker"><span class="gem">' + esc(leadSec.code) + '</span>' + esc(leadSec.name) +
+          '<span class="kicker-rule"></span><time>' + esc(fmtTime(lead.date)) + '</time></div>' +
+        '<h2 class="lead-title">' + headlineBtn(lead, leadSec) + '</h2>' +
+        (lead.img ? '<figure class="lead-photo"><img src="' + esc(lead.img) + '" alt="' + esc(lead.title) + '" loading="eager" decoding="async" referrerpolicy="no-referrer"><figcaption class="cap">图片：' + esc(hostOf(lead.link) || host) + '</figcaption></figure>' : '') +
+        leadFragment(lead.html, 3) +
+        '<p class="cut">（全文见第 ' + esc(leadSec.code) + ' 版）</p>' +
+        '<section class="toc" aria-label="本期全版目录">' +
+          '<div class="toc-head">' +
+            '<span class="toc-title">本期全版目录</span>' +
+            '<span class="toc-meta">共 ' + arts.length + ' 篇 · 点标题即翻到该版该篇</span>' +
+          '</div>' +
+          '<ol class="toc-list">' + tocHTML + '</ol>' +
+        '</section>' +
+      '</article>' +
+      '<aside class="rail">' +
+        '<h3 class="rail-head">最新消息<span class="rail-sub">按发布时间</span></h3>' +
+        '<ol class="rail-list">' + railHTML + '</ol>' +
+        '<button class="rail-more" type="button" data-act="section" data-sec="' + esc(secs[0].id) + '">浏览第 ' + esc(secs[0].code) + ' 版全部 ' + secs[0].items.length + ' 篇</button>' +
+        '<div class="rail-index">' +
+          '<h3 class="rail-head">版面索引<span class="rail-sub">共 ' + secs.length + ' 版</span></h3>' +
+          '<ul class="index-list">' + indexHTML + '</ul>' +
+        '</div>' +
+      '</aside>' +
+    '</section>' +
+    '<footer class="colophon">' +
+      '<span>订阅源：<a href="' + esc(state.feed.link || state.feedUrl) + '" target="_blank" rel="noopener noreferrer">' + esc(state.feed.title || state.feedUrl) + '</a></span>' +
+      '<span>地址：' + esc(state.feedUrl) + '</span>' +
+      '<span>共 ' + arts.length + ' 篇 · ' + secs.length + ' 个栏目</span>' +
+      '<span class="copy">版面由 RSS 源自动排印；栏目按标题关键词自动归版，仅供阅读参考。正文版权归原站点所有。</span>' +
+    '</footer>' +
+  '</div>';
+  if(view.scrollTop) view.scrollTop = 0;
+  window.scrollTo(0, 0);
+}
+
+/* ===================================================================
+   内页：一篇一版，翻页浏览
+   =================================================================== */
+function articleHTML(a, sec, idx){
+  var total = sec.items.length;
+  var body = (a.html && a.html.trim()) ? a.html : '<p style="text-indent:0;font-family:var(--kai);color:var(--ink-3)">该条目未提供正文，可点击上方原文链接阅读全文。</p>';
+  return '<div class="sheet-meta">' +
+      '<span class="gem">' + esc(sec.code) + '</span>' +
+      '<span class="sec-name">' + esc(sec.name) + '</span>' +
+      '<span>/</span>' +
+      '<span>第 ' + (idx + 1) + ' 篇 · 共 ' + total + ' 篇</span>' +
+    '</div>' +
+    '<h1 class="art-title">' + esc(a.title) + '</h1>' +
+    '<div class="art-byline">' +
+      '<span>' + esc(fmtFull(a.date)) + '</span>' +
+      '<span class="byline-sep"></span>' +
+      '<span>来源：' + esc(hostOf(a.link) || feedHost()) + '</span>' +
+      (a.link ? '<span class="byline-sep"></span><a href="' + esc(a.link) + '" target="_blank" rel="noopener noreferrer">原文链接</a>' : '') +
+    '</div>' +
+    '<div class="art-body">' + body + '</div>' +
+    '<div class="art-end">（全文完）</div>' +
+    '<div class="sheet-foot"><span>第 ' + esc(sec.code) + ' 版 · ' + esc(sec.name) + '</span><span>本版由 RSS 源自动排印</span></div>';
+}
+
+function updateBar(){
+  var sec = curSec();
+  if(!sec) return;
+  var i = state.cur.idx;
+  var dots = EL('dots');
+  if(dots){
+    dots.innerHTML = sec.items.map(function(a, ix){
+      return '<button class="dot-btn" type="button" data-act="jump" data-i="' + ix + '" aria-current="' + (ix === i) + '" title="' + esc(a.title.slice(0, 30)) + '">' + (ix + 1) + '</button>';
+    }).join('');
+    var active = dots.querySelector('.dot-btn[aria-current="true"]');
+    if(active && active.scrollIntoView) active.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+  var count = EL('barCount');
+  if(count) count.textContent = '第 ' + (i + 1) + ' / ' + sec.items.length + ' 篇';
+  var prev = EL('prevBtn'), next = EL('nextBtn');
+  if(prev) prev.disabled = i === 0;
+  if(next) next.disabled = i === sec.items.length - 1;
+}
+
+function renderDetail(secId, idx){
+  var sec = state.sections.filter(function(s){ return s.id === secId; })[0] || state.sections[0];
+  if(!sec || !sec.items.length){ renderHome(); return; }
+  var total = sec.items.length;
+  idx = Math.max(0, Math.min(Number(idx) || 0, total - 1));
+  state.view = 'detail';
+  state.cur = { secId: sec.id, idx: idx };
+  state.animating = false;
+  setBodyView('detail');
+
+  var hint = total > 1 ? '<span class="press-hint" id="pressHint">点击页边或按 ← → 翻页</span>' : '';
+  EL('view').innerHTML =
+  '<div class="detail">' +
+    '<div class="stage" id="stage">' +
+      '<div class="sheet" id="sheetFront"><div class="sheet-inner" id="sheetInner">' + articleHTML(sec.items[idx], sec, idx) + '</div></div>' +
+      '<div class="sheet back" id="sheetBack" hidden><div class="sheet-inner" id="sheetBackInner"></div></div>' +
+      '<button class="turn-zone prev" type="button" data-act="prev" aria-label="上一篇"></button>' +
+      '<button class="turn-zone next" type="button" data-act="next" aria-label="下一篇"></button>' +
+      '<div class="fold" aria-hidden="true"></div>' +
+      '<button class="back-home" type="button" data-act="home" aria-label="返回头版">头版</button>' +
+      hint +
+    '</div>' +
+  '</div>';
+  updateBar();
+  var front = EL('sheetFront');
+  if(front) front.scrollTop = 0;
+}
+
+function silentHash(hash){
+  try{
+    history.replaceState(null, '', hash ? '#' + hash : location.pathname + location.search);
+    state.appliedHash = location.hash || '';
+  }catch(e){ state.appliedHash = location.hash || ''; }
+}
+
+function edgeFeedback(dir){
+  var s = EL('sheetFront');
+  if(!s) return;
+  s.classList.add(dir === 'next' ? 'edge-next' : 'edge-prev');
+  setTimeout(function(){ s.classList.remove('edge-next', 'edge-prev'); }, 380);
+  toast(dir === 'next' ? '已是本版最后一篇' : '已是本版第一篇');
+}
+
+function flip(dir){
+  var sec = curSec();
+  if(!sec || state.animating) return;
+  var from = state.cur.idx;
+  var to = from + (dir === 'next' ? 1 : -1);
+  if(to < 0 || to >= sec.items.length){ edgeFeedback(dir); return; }
+  var front = EL('sheetFront'), back = EL('sheetBack');
+  if(!front || !back) return;
+
+  state.animating = true;
+  var hint = EL('pressHint');
+  if(hint) hint.classList.add('is-hidden');
+
+  var nextHTML = articleHTML(sec.items[to], sec, to);
+  var finish = function(){
+    var f = EL('sheetFront');
+    if(!f) { state.animating = false; return; }
+    f.firstElementChild.innerHTML = nextHTML;
+    f.style.transition = 'none';
+    f.classList.remove('turn-next');
+    void f.offsetWidth;
+    f.style.transition = '';
+    back.hidden = true;
+    back.style.transition = '';
+    back.style.transform = '';
+    back.classList.remove('above', 'below');
+    back.firstElementChild.innerHTML = '';
+    f.scrollTop = 0;
+    state.cur.idx = to;
+    state.animating = false;
+    updateBar();
+    silentHash('s/' + sec.id + '/' + to);
+  };
+
+  back.hidden = false;
+  back.style.transition = '';
+  back.style.transform = '';
+
+  if(dir === 'next'){
+    back.classList.remove('above');
+    back.classList.add('below');
+    back.firstElementChild.innerHTML = nextHTML;
+    void back.offsetWidth;
+    front.classList.remove('edge-next', 'edge-prev');
+    void front.offsetWidth;
+    front.classList.add('turn-next');
+  }else{
+    back.classList.remove('below');
+    back.classList.add('above');
+    back.firstElementChild.innerHTML = nextHTML;
+    back.style.transition = 'none';
+    back.style.transform = 'rotateY(-104deg)';
+    void back.offsetWidth;
+    back.style.transition = '';
+    back.style.transform = 'rotateY(0deg)';
+  }
+  setTimeout(finish, FLIP_MS + 60);
+}
+
+function jumpTo(i){
+  var sec = curSec();
+  if(!sec || state.animating) return;
+  i = Math.max(0, Math.min(Number(i) || 0, sec.items.length - 1));
+  if(i === state.cur.idx) return;
+  var front = EL('sheetFront');
+  if(!front) return;
+  front.firstElementChild.innerHTML = articleHTML(sec.items[i], sec, i);
+  front.scrollTop = 0;
+  state.cur.idx = i;
+  updateBar();
+  silentHash('s/' + sec.id + '/' + i);
+}
+
+/* ===================================================================
+   路由（首页 ↔ 内页 之间用翻版过渡）
+   =================================================================== */
+var pendingTurn = false;
+
+function pageTurn(renderFn){
+  var view = EL('view');
+  if(REDUCED || !view || !view.firstElementChild){ renderFn(); return; }
+  var scrollY = window.scrollY || window.pageYOffset || 0;
+  var wrap = document.createElement('div');
+  wrap.className = 'turn-wrap ' + (state.view === 'detail' ? 'view-detail' : 'view-home');
+  var layer = document.createElement('div');
+  layer.className = 'turn-layer';
+  var snap = document.createElement('div');
+  snap.className = 'snap';
+  snap.style.top = (-scrollY) + 'px';
+  snap.innerHTML = view.innerHTML;
+  snap.querySelectorAll('[id]').forEach(function(n){ n.removeAttribute('id'); });
+  var srcBoxes = Array.prototype.slice.call(view.querySelectorAll('.sheet,.lead,.rail'));
+  var copyBoxes = Array.prototype.slice.call(snap.querySelectorAll('.sheet,.lead,.rail'));
+  srcBoxes.forEach(function(src, i){
+    if(copyBoxes[i]) copyBoxes[i].scrollTop = src.scrollTop;
+  });
+  layer.appendChild(snap);
+  wrap.appendChild(layer);
+  document.body.appendChild(wrap);
+
+  renderFn();
+  window.scrollTo(0, 0);
+  setTimeout(function(){ layer.classList.add('is-turning'); }, 30);
+  setTimeout(function(){ if(wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 780);
+}
+
+function route(){
+  state.appliedHash = location.hash || '';
+  if(!state.articles.length) return;
+  var h = (location.hash || '').replace(/^#/, '');
+  var m = h.match(/^\/?s\/([A-Za-z0-9_-]+)(?:\/([0-9]+))?/);
+  var go = null;
+  if(m){
+    var sec = state.sections.filter(function(s){ return s.id === m[1]; })[0];
+    if(sec){
+      var idx = m[2] ? parseInt(m[2], 10) : 0;
+      go = function(){ renderDetail(sec.id, idx); };
+    }
+  }
+  if(!go) go = function(){ state.view = 'home'; renderHome(); };
+  if(pendingTurn){ pendingTurn = false; pageTurn(go); }
+  else{ go(); }
+}
+function navigate(hash){
+  var h = hash ? '#' + hash : '';
+  var toDetail = /^s\//.test(hash || '');
+  if((state.view === 'home' && toDetail) || (state.view === 'detail' && !toDetail)){
+    pendingTurn = true;
+  }
+  if((location.hash || '') !== h){
+    if(h){ location.hash = h; }
+    else{
+      try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){ location.hash = ''; }
+      route();
+    }
+    return;
+  }
+  route();
+}
+
+/* ===================================================================
+   弹窗与取源流程
+   =================================================================== */
+function setModalStatus(text, isError){
+  var s = EL('modalStatus');
+  if(!s) return;
+  s.hidden = !text;
+  s.textContent = text || '';
+  s.classList.toggle('is-error', !!isError);
+}
+function setBusy(on, text, isError){
+  var btn = EL('startBtn');
+  if(btn){ btn.disabled = on; btn.textContent = on ? '排印中' : '开印'; }
+  Array.prototype.slice.call(document.querySelectorAll('.feed-opt')).forEach(function(b){ b.disabled = on; });
+  setModalStatus(text, isError);
+}
+function closeModal(){ var m = EL('modal'); if(m) m.hidden = true; }
+function openModal(){
+  var m = EL('modal');
+  if(!m) return;
+  m.hidden = false;
+  var input = EL('feedInput');
+  if(input){
+    input.value = state.feedUrl || input.value;
+    syncFeedPick(input.value);
+    setTimeout(function(){ input.focus(); input.select(); }, 30);
+  }
+  setModalStatus('', false);
+}
+
+function applyData(url, data){
+  state.feedUrl = url;
+  state.feed = {
+    title: String(data.title || '').trim() || '每日新闻',
+    link: data.link || url,
+    description: data.description || ''
+  };
+  var arts = (data.items || []).map(toArticle).filter(function(a){ return a.title; });
+  if(!arts.length) throw new Error('订阅里没有可排印的条目');
+  arts.sort(function(a, b){
+    var ta = a.date ? a.date.getTime() : 0, tb = b.date ? b.date.getTime() : 0;
+    return tb - ta;
+  });
+  state.articles = arts;
+  buildSections();
+  try{ localStorage.setItem('rsspaper:url', url); }catch(e){ /* 隐私模式忽略 */ }
+}
+
+function start(url){
+  url = String(url || '').trim();
+  var inModal = EL('modal') && !EL('modal').hidden;
+  if(!url){
+    if(inModal) setModalStatus('请先填入订阅地址。', true);
+    else openModal();
+    return;
+  }
+  if(!/^(http|https):\/\//i.test(url)){
+    if(inModal) setModalStatus('订阅地址需以 http:// 或 https:// 开头。', true);
+    else{ openModal(); setModalStatus('订阅地址需以 http:// 或 https:// 开头。', true); }
+    return;
+  }
+  pendingRestore = (state.view === 'detail' && state.sections.length) ? { secId: state.cur.secId, idx: state.cur.idx } : null;
+  if(inModal) setBusy(true, '正在取源并排印……', false);
+  else pressOn('正在取源并排印');
+
+  loadFeed(url).then(function(data){
+    applyData(url, data);
+    if(inModal) setBusy(false, '', false);
+    closeModal();
+    var restore = pendingRestore;
+    pendingRestore = null;
+    var sec = restore ? state.sections.filter(function(s){ return s.id === restore.secId; })[0] : null;
+    if(sec){
+      renderDetail(sec.id, Math.min(restore.idx, sec.items.length - 1));
+      silentHash('s/' + sec.id + '/' + Math.min(restore.idx, sec.items.length - 1));
+    }else{
+      state.view = 'home';
+      renderHome();
+      silentHash('');
+      try{ if(location.hash) history.replaceState(null, '', location.pathname + location.search); }catch(e){}
+    }
+    toast('已付印：' + state.articles.length + ' 篇 · ' + state.sections.length + ' 个栏目');
+  }).catch(function(err){
+    var details = (err && err.details && err.details.length) ? err.details : [(err && err.message) || '未知错误'];
+    if(inModal){
+      setBusy(false, '取源失败：' + ((err && err.message) || '未知错误') + '\n' + details.slice(0, 3).join('；'), true);
+    }else{
+      renderError(details);
+    }
+  });
+}
+
+/* ===================================================================
+   彩色图 / 黑白图切换
+   =================================================================== */
+function toggleColor(){
+  state.colorize = !state.colorize;
+  setBodyView(state.view === 'detail' ? 'detail' : 'home');
+  Array.prototype.slice.call(document.querySelectorAll('[data-act="color"]')).forEach(function(b){
+    b.setAttribute('aria-pressed', String(state.colorize));
+  });
+  try{ localStorage.setItem('rsspaper:color', state.colorize ? '1' : '0'); }catch(e){}
+  toast(state.colorize ? '图片已改为彩色' : '图片已改为黑白');
+}
+
+/* ===================================================================
+   事件
+   =================================================================== */
+document.addEventListener('click', function(e){
+  var opt = e.target.closest ? e.target.closest('.feed-opt') : null;
+  if(opt){
+    var pick = opt.getAttribute('data-url');
+    var field = EL('feedInput');
+    if(field && pick){ field.value = pick; field.focus(); }
+    syncFeedPick(pick);
+    return;
+  }
+  var el = e.target.closest ? e.target.closest('[data-act]') : null;
+  if(!el) return;
+  var act = el.getAttribute('data-act');
+  if(act === 'section'){
+    navigate('s/' + el.getAttribute('data-sec'));
+  }else if(act === 'open'){
+    navigate('s/' + el.getAttribute('data-sec') + '/' + (el.getAttribute('data-idx') || 0));
+  }else if(act === 'home'){
+    navigate('');
+  }else if(act === 'prev'){
+    flip('prev');
+  }else if(act === 'next'){
+    flip('next');
+  }else if(act === 'jump'){
+    jumpTo(el.getAttribute('data-i'));
+  }else if(act === 'color'){
+    toggleColor();
+  }else if(act === 'theme'){
+    cycleTheme();
+  }else if(act === 'resub'){
+    openModal();
+  }else if(act === 'refresh'){
+    start(state.feedUrl || (EL('feedInput') ? EL('feedInput').value : ''));
+  }else if(act === 'retry'){
+    var url = state.feedUrl || (EL('feedInput') ? EL('feedInput').value : '');
+    if(EL('modal').hidden === false) start(url);
+    else{ pendingRestore = null; pressOn('正在重新取源'); start(url); }
+  }
+});
+
+document.addEventListener('keydown', function(e){
+  var modal = EL('modal');
+  if(modal && !modal.hidden){
+    if(e.key === 'Escape' && state.articles.length) closeModal();
+    if(e.key === 'Enter' && document.activeElement === EL('feedInput')){ e.preventDefault(); start(EL('feedInput').value); }
+    return;
+  }
+  if(state.view !== 'detail') return;
+  if(e.key === 'ArrowRight' || e.key === 'PageDown'){ e.preventDefault(); flip('next'); }
+  else if(e.key === 'ArrowLeft' || e.key === 'PageUp'){ e.preventDefault(); flip('prev'); }
+  else if(e.key === 'Escape'){ navigate(''); }
+});
+
+var touchStart = null;
+document.addEventListener('touchstart', function(e){
+  if(state.view !== 'detail' || !e.touches || !e.touches.length) return;
+  touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+}, { passive: true });
+document.addEventListener('touchend', function(e){
+  if(!touchStart || state.view !== 'detail' || !e.changedTouches || !e.changedTouches.length) return;
+  var dx = e.changedTouches[0].clientX - touchStart.x;
+  var dy = e.changedTouches[0].clientY - touchStart.y;
+  touchStart = null;
+  if(Math.abs(dx) > 70 && Math.abs(dy) < 50) flip(dx < 0 ? 'next' : 'prev');
+}, { passive: true });
+
+window.addEventListener('hashchange', function(){
+  if((location.hash || '') !== state.appliedHash) route();
+});
+window.addEventListener('popstate', function(){
+  if((location.hash || '') !== state.appliedHash) route();
+});
+
+/* ===================================================================
+   启动
+   =================================================================== */
+(function init(){
+  var savedColor = true, savedTheme = 'sepia';
+  try{ savedColor = localStorage.getItem('rsspaper:color') !== '0'; }catch(e){}
+  try{ savedTheme = localStorage.getItem('rsspaper:theme') || 'sepia'; }catch(e){}
+  state.colorize = savedColor;
+  state.theme = THEMES.some(function(t){ return t.id === savedTheme; }) ? savedTheme : 'sepia';
+  setBodyView('home');
+  renderFeedPick();
+  var feedInput = EL('feedInput');
+  if(feedInput){
+    feedInput.addEventListener('input', function(){ syncFeedPick(feedInput.value); });
+  }
+  var btn = EL('startBtn');
+  if(btn){
+    btn.addEventListener('click', function(){ start(EL('feedInput').value); });
+    btn.disabled = false;
+    btn.textContent = '开印';
+  }
+})();
+
+})();
+</script>
+
+
+</body></html>
